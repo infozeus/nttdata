@@ -8,7 +8,7 @@
 		<version>3.4.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.nissum</groupId>
+	<groupId>com.smartjob</groupId>
 	<artifactId>ejercicio</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>ejercicio</name>
