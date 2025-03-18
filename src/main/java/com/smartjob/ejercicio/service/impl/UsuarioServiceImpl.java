@@ -18,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.smartjob.ejercicio.dao.UsuarioDao;
+import com.smartjob.ejercicio.exception.EmailDuplicadoException;
 import com.smartjob.ejercicio.model.Telefono;
 import com.smartjob.ejercicio.model.Usuario;
 
@@ -46,8 +47,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new RuntimeException("Debe ingresar datos de usuario");
         }
 
+        if (usuario.getName() == null || usuario.getName().trim().isEmpty()) {
+            throw new RuntimeException("El nombre no puede estar vacío");
+        }
+
         if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
-            throw new RuntimeException("El correo ya está registrado");
+            throw new EmailDuplicadoException("El correo ya está registrado");
         }
 
         if (!emailRegex.matcher(usuario.getEmail()).matches()) {

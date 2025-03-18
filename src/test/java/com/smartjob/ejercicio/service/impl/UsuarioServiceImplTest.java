@@ -4,6 +4,8 @@ package com.smartjob.ejercicio.service.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+import java.lang.reflect.Field;
 import java.util.Collections;
 
 import com.smartjob.ejercicio.dao.TelefonoDao;
@@ -27,10 +29,17 @@ public class UsuarioServiceImplTest {
     private UsuarioServiceImpl usuarioService;
 
    @BeforeEach
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
-        usuarioService.passwordRegexConfig = "^(?=.*[A-Z])(?=.*\\\\d)[A-Za-z\\\\d]{8,}$";
+        setPrivateField(usuarioService, "jwtSecret", "mysecrettokenmysecrettokenmysecrettoken"); // Debe ser >= 32 bytes 
+        usuarioService.passwordRegexConfig = "^(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{8,}$";
         usuarioService.init();
+    }
+
+    private void setPrivateField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 
     @Test
@@ -55,6 +64,7 @@ public class UsuarioServiceImplTest {
     @Test
     public void testCrearUsuario_EmailAlreadyRegistered() {
         UsuarioDao usuarioDao = new UsuarioDao();
+        usuarioDao.setName("Test User");
         usuarioDao.setEmail("test@example.com");
         TelefonoDao telefonoDao = new TelefonoDao();
         usuarioDao.setPhones(Collections.singletonList(telefonoDao));
@@ -70,6 +80,7 @@ public class UsuarioServiceImplTest {
     @Test
     public void testCrearUsuario_InvalidEmailFormat() {
         UsuarioDao usuarioDao = new UsuarioDao();
+        usuarioDao.setName("Test User");
         usuarioDao.setEmail("invalid-email");
         usuarioDao.setPhones(Collections.singletonList(new TelefonoDao()));
 
@@ -82,6 +93,7 @@ public class UsuarioServiceImplTest {
     @Test
     public void testCrearUsuario_InvalidPasswordFormat() {
         UsuarioDao usuarioDao = new UsuarioDao();
+        usuarioDao.setName("Test User");
         usuarioDao.setEmail("test@example.com");
         usuarioDao.setPassword("123");
         usuarioDao.setPhones(Collections.singletonList(new TelefonoDao()));
@@ -97,7 +109,7 @@ public class UsuarioServiceImplTest {
         UsuarioDao usuarioDao = new UsuarioDao();
         usuarioDao.setName("Test User");
         usuarioDao.setEmail("test@example.com");
-        usuarioDao.setPassword("Secure99");
+        usuarioDao.setPassword("Hunter2024");
         usuarioDao.setPhones(Collections.singletonList(new TelefonoDao()));
 
         when(usuarioRepository.findByEmail("test@example.com")).thenReturn(null);
@@ -113,7 +125,27 @@ public class UsuarioServiceImplTest {
         assertNotNull(result.getLast_login());
         assertNotNull(result.getToken());
         assertTrue(result.isIsactive());
-        assertTrue(new BCryptPasswordEncoder().matches("Secure99", result.getPassword()));
+
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        assertTrue(passwordEncoder.matches("Hunter2024", result.getPassword()));
+
         assertEquals(1, result.getPhones().size());
+    }
+
+    @Test
+    public void testCrearUsuario_Failure_NombreVacio() {
+        UsuarioDao usuarioDao = new UsuarioDao();
+        usuarioDao.setName(""); // Nombre vacío
+        usuarioDao.setEmail("test@example.com");
+        usuarioDao.setPassword("Hunter2024");
+        usuarioDao.setPhones(Collections.singletonList(new TelefonoDao()));
+
+        when(usuarioRepository.findByEmail("test@example.com")).thenReturn(null);
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            usuarioService.crearUsuario(usuarioDao);
+        });
+
+        assertEquals("El nombre no puede estar vacío", exception.getMessage());
     }
 }
